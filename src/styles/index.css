@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Global kiosk resets.
+  These complement the viewport meta tag and usePreventZoom hook to ensure
+  no browser-level pinch-zoom, pan, overscroll, or text selection can occur.
+*/
+html,
+body,
+#root {
+  touch-action: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
