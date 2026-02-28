@@ -35,8 +35,10 @@ export default {
         'panel-acusensus':      '#2E81B8',
         'panel-competitor':     '#AC4CAC',
 
-        // Default text
+        // Default text (page background)
         'text-default':         '#20455F',
+        // Default text inside panels
+        'text-panel':           '#E4E4E4',
 
         // Secondary button surface
         'btn-secondary-bg':     '#DCDCDC',
