@@ -11,16 +11,16 @@ export default {
       },
 
       // ----------------------------------------------------------------
-      // Font sizes — all values authored against the 1920×1080 canvas.
-      // pt → px conversion at 96 dpi: 1pt = 1.333px
+      // Font sizes — SINGLE SOURCE OF TRUTH for Title, PrimaryText, SecondaryText.
+      // All values authored against the 1920×1080 canvas.
       // ----------------------------------------------------------------
       fontSize: {
         // Page content hierarchy
-        'title':          ['107px', { lineHeight: '1.1', fontWeight: '700' }], // 80pt Bold
-        'primary-text':   ['77px',  { lineHeight: '1.2', fontWeight: '500' }], // 58pt Medium
-        'secondary-text': ['59px',  { lineHeight: '1.3', fontWeight: '500' }], // 44pt Medium
+        'title':          ['88px', { lineHeight: '1.1', fontWeight: '700' }], // 80pt Bold
+        'primary-text':   ['44px',  { lineHeight: '1.2', fontWeight: '500' }], // 58px Medium
+        'secondary-text': ['32px',  { lineHeight: '1.3', fontWeight: '500' }], // 44pt Medium
         // Button labels
-        'btn-primary':    ['96px',  { lineHeight: '1.0', fontWeight: '600' }], // 72pt Semibold
+        'btn-primary':    ['58px',  { lineHeight: '1.0', fontWeight: '600' }], // 72pt Semibold
         'btn-sorting':    ['44px',  { lineHeight: '1.2', fontWeight: '500' }], // 44px Medium
       },
 

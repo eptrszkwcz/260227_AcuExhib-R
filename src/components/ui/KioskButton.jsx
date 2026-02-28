@@ -8,6 +8,23 @@
  *   disabled   boolean
  *   className  string      — additional Tailwind classes
  */
-export default function KioskButton({ children, onPress, disabled, className }) {
-  return <div></div>
+export default function KioskButton({ children, onPress, disabled = false, className = '' }) {
+  const handlePointerUp = (e) => {
+    if (disabled) return
+    if (e.button !== 0) return // only primary button
+    onPress?.()
+  }
+
+  return (
+    <button
+      type="button"
+      role="button"
+      disabled={disabled}
+      onPointerUp={handlePointerUp}
+      className={`min-w-[80px] min-h-[80px] flex items-center justify-center touch-manipulation select-none ${className}`}
+      style={{ touchAction: 'manipulation' }}
+    >
+      {children}
+    </button>
+  )
 }

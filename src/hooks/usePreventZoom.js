@@ -1,28 +1,17 @@
 import { useEffect } from 'react'
 
 /**
- * Attaches document-level event listeners to block browser pinch-zoom and
- * overscroll gestures on the kiosk touch screen.
+ * Prevents browser zoom/pan so the kiosk doesn’t react to pinch or trackpad zoom.
+ * Does NOT prevent multiple simultaneous touches — two players can both touch
+ * the screen at once. Pinch/pan on touch is disabled via CSS touch-action: none
+ * (see index.css). This hook only blocks:
+ *  - wheel + ctrlKey (trackpad pinch-to-zoom)
  *
- * Must be called with { passive: false } because preventDefault() is a no-op
- * on passive listeners in modern browsers.
- *
- * Blocks:
- *  - Multi-touch touchstart / touchmove  (pinch-zoom, two-finger scroll)
- *  - wheel + ctrlKey                      (trackpad pinch-to-zoom)
- *
- * This hook is designed to be called once in main.jsx or App.jsx.
- * It operates on `document`, not `window`, for correct passive flag semantics.
+ * Must use { passive: false } where preventDefault() is used.
  */
 export function usePreventZoom() {
   useEffect(() => {
     const opts = { passive: false }
-
-    function handleTouch(e) {
-      if (e.touches && e.touches.length > 1) {
-        e.preventDefault()
-      }
-    }
 
     function handleWheel(e) {
       if (e.ctrlKey) {
@@ -30,14 +19,7 @@ export function usePreventZoom() {
       }
     }
 
-    document.addEventListener('touchstart', handleTouch, opts)
-    document.addEventListener('touchmove', handleTouch, opts)
     document.addEventListener('wheel', handleWheel, opts)
-
-    return () => {
-      document.removeEventListener('touchstart', handleTouch, opts)
-      document.removeEventListener('touchmove', handleTouch, opts)
-      document.removeEventListener('wheel', handleWheel, opts)
-    }
+    return () => document.removeEventListener('wheel', handleWheel, opts)
   }, [])
 }

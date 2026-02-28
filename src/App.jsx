@@ -9,7 +9,7 @@ import PlayerMode from './pages/PlayerMode'
 import GamePlay from './pages/GamePlay'
 import Results from './pages/Results'
 
-const IDLE_TIMEOUT_MS = Number(import.meta.env.VITE_IDLE_TIMEOUT_MS) || 30000
+const IDLE_TIMEOUT_MS = Number(import.meta.env.VITE_IDLE_TIMEOUT_MS) || 300000 // 5 minutes
 
 /**
  * Wraps all routes. Activates the idle timer so any N seconds of inactivity
