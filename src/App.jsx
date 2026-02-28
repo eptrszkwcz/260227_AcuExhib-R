@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { GameProvider } from './context/GameContext'
 import { useIdleTimer } from './hooks/useIdleTimer'
 import { usePreventZoom } from './hooks/usePreventZoom'
+import FullscreenLayout from './components/layout/FullscreenLayout'
 import Welcome from './pages/Welcome'
 import Instructions from './pages/Instructions'
 import PlayerMode from './pages/PlayerMode'
@@ -21,7 +22,11 @@ function IdleTimerWrapper({ children }) {
     timeoutMs: IDLE_TIMEOUT_MS,
     onIdle: () => navigate('/', { replace: true }),
   })
-  return children
+  return (
+    <FullscreenLayout>
+      {children}
+    </FullscreenLayout>
+  )
 }
 
 export default function App() {
