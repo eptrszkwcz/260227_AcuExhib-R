@@ -18,4 +18,8 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
+  /* Design system defaults */
+  background-color: #DAD9CE;
+  color: #20455F;
+  font-family: 'Anaheim', sans-serif;
 }
