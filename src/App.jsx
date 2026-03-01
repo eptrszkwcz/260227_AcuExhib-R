@@ -10,6 +10,8 @@ import GamePlay from './pages/GamePlay'
 import Results from './pages/Results'
 
 const IDLE_TIMEOUT_MS = Number(import.meta.env.VITE_IDLE_TIMEOUT_MS) || 300000 // 5 minutes
+// Set to true to pause idle timeout during development; set back to false for production
+const PAUSE_IDLE_TIMEOUT_FOR_DEV = true
 
 /**
  * Wraps all routes. Activates the idle timer so any N seconds of inactivity
@@ -19,7 +21,7 @@ function IdleTimerWrapper({ children }) {
   const navigate = useNavigate()
   usePreventZoom()
   useIdleTimer({
-    timeoutMs: IDLE_TIMEOUT_MS,
+    timeoutMs: PAUSE_IDLE_TIMEOUT_FOR_DEV ? 0 : IDLE_TIMEOUT_MS,
     onIdle: () => navigate('/', { replace: true }),
   })
   return (

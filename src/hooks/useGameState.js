@@ -76,16 +76,34 @@ export function useGameState() {
 
   /**
    * Mark the game as complete and calculate scores.
+   * @param {number | number[]} [elapsedSecondsByPlayer] — for single player: seconds for player 0; for dual: [secs0, secs1]
    */
-  const completeGame = useCallback(() => {
-    dispatch({ type: 'COMPLETE_GAME', payload: { labelByImageId } })
-  }, [dispatch])
+  const completeGame = useCallback(
+    (elapsedSecondsByPlayer = null) => {
+      dispatch({
+        type: 'COMPLETE_GAME',
+        payload: { labelByImageId, elapsedSecondsByPlayer },
+      })
+    },
+    [dispatch]
+  )
+
+  /**
+   * Undo: go back to the previous image and remove its classification (single player).
+   */
+  const undoToPreviousImage = useCallback(
+    (playerIndex = 0) => {
+      dispatch({ type: 'UNDO_CLASSIFICATION', payload: { playerIndex } })
+    },
+    [dispatch]
+  )
 
   return {
     gameState,
     startGame,
     classifyImage,
     completeGame,
+    undoToPreviousImage,
     resetGame,
   }
 }

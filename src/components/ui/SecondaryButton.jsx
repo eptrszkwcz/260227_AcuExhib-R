@@ -21,8 +21,8 @@ export default function SecondaryButton({
       onPress={onPress}
       disabled={disabled}
       className={`
-        w-btn-secondary h-btn-secondary rounded-ui
-        bg-btn-secondary-bg shadow-btn-secondary
+        w-btn-secondary h-btn-secondary min-w-btn-secondary min-h-btn-secondary
+        rounded-ui bg-btn-secondary-bg shadow-btn-secondary
         flex items-center justify-center text-text-default
         disabled:opacity-50 disabled:cursor-not-allowed
         active:scale-[0.98]

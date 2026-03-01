@@ -20,8 +20,8 @@ export default {
         'primary-text':   ['44px',  { lineHeight: '1.2', fontWeight: '500' }], // 58px Medium
         'secondary-text': ['32px',  { lineHeight: '1.3', fontWeight: '500' }], // 44pt Medium
         // Button labels
-        'btn-primary':    ['58px',  { lineHeight: '1.0', fontWeight: '600' }], // 72pt Semibold
-        'btn-sorting':    ['44px',  { lineHeight: '1.2', fontWeight: '500' }], // 44px Medium
+        'btn-primary':    ['54px',  { lineHeight: '1.0', fontWeight: '600' }], // 72pt Semibold
+        'btn-sorting':    ['44px',  { lineHeight: '1.0', fontWeight: '500' }], // 44px Medium, tight leading
       },
 
       // ----------------------------------------------------------------
@@ -29,7 +29,7 @@ export default {
       // ----------------------------------------------------------------
       colors: {
         // Page background (both sides)
-        'page-bg':              '#DAD9CE',
+        'page-bg':              '#D9D9D9',
 
         // Panel colors — driven by side/theme
         'panel-acusensus':      '#2E81B8',
@@ -110,7 +110,7 @@ export default {
         'kiosk-card-h':   '240px',
         'kiosk-zone-w':   '480px',
         'btn-sorting':    '216px', // sorting button is always 216×216
-        'btn-secondary':  '64px',  // secondary button is always 64×64
+        'btn-secondary':  '54px',  // secondary button is always 54x54
       },
     },
   },

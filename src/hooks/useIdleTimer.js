@@ -24,6 +24,7 @@ export function useIdleTimer({ timeoutMs, onIdle }) {
 
   const resetTimer = useRef(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (timeoutMs <= 0) return // disabled (e.g. pause for development)
     timerRef.current = setTimeout(() => {
       onIdleRef.current?.()
     }, timeoutMs)

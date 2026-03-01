@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Title, PrimaryText, PrimaryButton } from '../components/ui'
 import { useGameState } from '../hooks/useGameState'
@@ -6,16 +7,28 @@ const PLACEHOLDER_SIZE = 280
 
 export default function PlayerMode() {
   const navigate = useNavigate()
-  const { startGame } = useGameState()
+  const { gameState, startGame } = useGameState()
+  const [pendingMode, setPendingMode] = useState(null)
+
+  // Navigate only after game state has been updated, and defer by one tick so React has committed
+  // (avoids Strict Mode / batching timing where GamePlay could mount with stale state and show comp at 2/24).
+  useEffect(() => {
+    if (!pendingMode || gameState.playerMode !== pendingMode) return
+    const id = setTimeout(() => {
+      navigate('/gameplay')
+      setPendingMode(null)
+    }, 0)
+    return () => clearTimeout(id)
+  }, [pendingMode, gameState.playerMode, navigate])
 
   const handleSinglePlayer = () => {
     startGame({ mode: 'single' })
-    navigate('/gameplay')
+    setPendingMode('single')
   }
 
   const handleDoublePlayer = () => {
     startGame({ mode: 'dual' })
-    navigate('/gameplay')
+    setPendingMode('dual')
   }
 
   return (
