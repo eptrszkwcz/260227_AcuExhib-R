@@ -38,10 +38,11 @@ export default function PrimaryButton({
       disabled={disabled}
       className={`
         h-[96px] min-w-0
-        py-[24px] px-[48px]
+        py-[28px] px-[48px]
         rounded-ui
         ${bgClass}
         ${borderClass}
+        shadow-btn
         text-btn-primary text-white font-semibold
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}

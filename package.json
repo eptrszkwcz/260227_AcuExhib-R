@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "generateImageManifest": "node scripts/generateImageManifest.js",
+    "predev": "npm run generateImageManifest",
     "dev": "vite",
+    "prebuild": "npm run generateImageManifest",
     "build": "vite build",
     "preview": "vite preview"
   },

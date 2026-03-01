@@ -9,6 +9,8 @@ const initialPlayerState = () => ({
   classifications: {},      // { [imageId]: 'seatbelt' | 'distracted' | 'safe' }
   currentIndex: 0,
   score: null,              // null during play; { correct, total, percent } after complete
+  roundResults: null,       // null during play; after complete: [{ imageId, userLabel, correctLabel, correct }]
+  elapsedSeconds: null,    // null until round complete; then time taken for this player (single: player 0 only)
 })
 
 const initialState = {
@@ -36,6 +38,8 @@ function gameReducer(state, action) {
           classifications: {},
           currentIndex: 0,
           score: null,
+          roundResults: null,
+          elapsedSeconds: null,
         })),
         phase: 'playing',
       }
@@ -62,21 +66,48 @@ function gameReducer(state, action) {
       }
     }
 
+    case 'UNDO_CLASSIFICATION': {
+      const { playerIndex } = action.payload
+      return {
+        ...state,
+        players: state.players.map((p, i) => {
+          if (i !== playerIndex || p.currentIndex === 0) return p
+          const prevIndex = p.currentIndex - 1
+          const imageIdToRemove = p.assignedImageIds[prevIndex]
+          const { [imageIdToRemove]: _, ...restClassifications } = p.classifications
+          return {
+            ...p,
+            currentIndex: prevIndex,
+            classifications: restClassifications,
+          }
+        }),
+      }
+    }
+
     case 'COMPLETE_GAME': {
-      // labelByImageId is passed in as payload to keep the reducer dependency-free
-      const { labelByImageId } = action.payload
-      const scoredPlayers = state.players.map((player) => {
-        if (player.assignedImageIds.length === 0) return { ...player, score: null }
-        const correct = player.assignedImageIds.filter(
-          (id) => player.classifications[id] === labelByImageId[id]
-        ).length
+      const { labelByImageId, elapsedSecondsByPlayer } = action.payload
+      const scoredPlayers = state.players.map((player, i) => {
+        if (player.assignedImageIds.length === 0) {
+          return { ...player, score: null, roundResults: null, elapsedSeconds: null }
+        }
+        const roundResults = player.assignedImageIds.map((imageId) => {
+          const userLabel = player.classifications[imageId]
+          const correctLabel = labelByImageId[imageId]
+          return {
+            imageId,
+            userLabel,
+            correctLabel,
+            correct: userLabel === correctLabel,
+          }
+        })
+        const correct = roundResults.filter((r) => r.correct).length
+        const total = player.assignedImageIds.length
+        const elapsedSeconds = Array.isArray(elapsedSecondsByPlayer) ? elapsedSecondsByPlayer[i] ?? null : (i === 0 ? elapsedSecondsByPlayer : null)
         return {
           ...player,
-          score: {
-            correct,
-            total: player.assignedImageIds.length,
-            percent: Math.round((correct / player.assignedImageIds.length) * 100),
-          },
+          score: { correct, total, percent: Math.round((correct / total) * 100) },
+          roundResults,
+          elapsedSeconds,
         }
       })
       return { ...state, players: scoredPlayers, phase: 'complete' }
