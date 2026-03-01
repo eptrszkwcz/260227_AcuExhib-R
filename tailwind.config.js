@@ -21,7 +21,7 @@ export default {
         'secondary-text': ['32px',  { lineHeight: '1.3', fontWeight: '500' }], // 44pt Medium
         // Button labels
         'btn-primary':    ['54px',  { lineHeight: '1.0', fontWeight: '600' }], // 72pt Semibold
-        'btn-sorting':    ['44px',  { lineHeight: '1.2', fontWeight: '500' }], // 44px Medium
+        'btn-sorting':    ['44px',  { lineHeight: '1.0', fontWeight: '500' }], // 44px Medium, tight leading
       },
 
       // ----------------------------------------------------------------

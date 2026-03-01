@@ -68,41 +68,41 @@ export default function Results() {
           <span className="text-text-panel text-primary-text">Our Solution</span>
         </div>
 
-        {/* Images correctly classified */}
-        <SecondaryText as="p" className="text-center">
-          Images correctly classified
-        </SecondaryText>
-
-        {/* Percent panel */}
-        <div
-          className={`rounded-ui flex flex-col items-center justify-center ${panelBg} shadow-btn py-8 px-12`}
-          style={{ width: RESULTS_PANEL_W_PX, minHeight: 200 }}
-        >
-          <span className="text-text-panel font-bold text-[104px] tabular-nums">
-            {score.percent}%
-          </span>
-          <span className="text-text-panel/80 text-secondary-text mt-2 tabular-nums">
-            {score.correct}/{score.total}
-          </span>
+        {/* Images correctly classified + percent panel (tighter spacing between label and panel) */}
+        <div className="flex flex-col items-center gap-2">
+          <SecondaryText as="p" className="text-center">
+            Images correctly classified
+          </SecondaryText>
+          <div
+            className={`rounded-ui flex flex-col items-center justify-center ${panelBg} shadow-btn py-8 px-12`}
+            style={{ width: RESULTS_PANEL_W_PX, minHeight: 200 }}
+          >
+            <span className="text-text-panel font-bold text-[104px] tabular-nums">
+              {score.percent}%
+            </span>
+            <span className="text-text-panel/80 text-secondary-text mt-2 tabular-nums">
+              {score.correct}/{score.total}
+            </span>
+          </div>
         </div>
 
-        {/* Time to completion */}
-        <SecondaryText as="p" className="text-center">
-          Time to completion
-        </SecondaryText>
-
-        {/* Time panel — same width as percent panel */}
-        <div
-          className={`rounded-ui flex items-center justify-center ${panelBg} shadow-btn py-4 px-10`}
-          style={{ width: RESULTS_PANEL_W_PX }}
-        >
-          <span className="text-text-panel font-bold text-5xl tabular-nums">
-            {formatMMSS(elapsedSeconds)}
-          </span>
+        {/* Time to completion + time panel (tighter spacing between label and panel) */}
+        <div className="flex flex-col items-center gap-2">
+          <SecondaryText as="p" className="text-center">
+            Time to completion
+          </SecondaryText>
+          <div
+            className={`rounded-ui flex items-center justify-center ${panelBg} shadow-btn py-4 px-10`}
+            style={{ width: RESULTS_PANEL_W_PX }}
+          >
+            <span className="text-text-panel font-bold text-5xl tabular-nums">
+              {formatMMSS(elapsedSeconds)}
+            </span>
+          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex flex-col items-center gap-4 mt-2">
+        {/* Buttons — extra top margin to double the space from time panel above */}
+        <div className="flex flex-col items-center gap-4 mt-6">
           <PrimaryButton theme="acusensus" onPress={() => {}}>
             SEE DETAILED SCORE
           </PrimaryButton>

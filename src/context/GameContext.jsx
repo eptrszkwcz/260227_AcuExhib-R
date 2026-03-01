@@ -27,22 +27,28 @@ function gameReducer(state, action) {
     case 'SET_PLAYER_MODE':
       return { ...state, playerMode: action.payload.mode }
 
-    case 'START_GAME':
+    case 'START_GAME': {
       // payload: { playerAssignments: [{ pool, imageIds }, { pool, imageIds }] }
-      return {
-        ...state,
-        playerMode: action.payload.playerMode,
-        players: action.payload.playerAssignments.map(({ pool, imageIds }) => ({
+      const playerAssignments = action.payload.playerAssignments ?? []
+      const players = playerAssignments.map((assignment) => {
+        const { pool, imageIds } = assignment
+        return {
           pool,
-          assignedImageIds: imageIds,
+          assignedImageIds: Array.isArray(imageIds) ? [...imageIds] : [],
           classifications: {},
           currentIndex: 0,
           score: null,
           roundResults: null,
           elapsedSeconds: null,
-        })),
+        }
+      })
+      return {
+        ...state,
+        playerMode: action.payload.playerMode,
+        players,
         phase: 'playing',
       }
+    }
 
     case 'CLASSIFY_IMAGE': {
       const { playerIndex, imageId, label } = action.payload
@@ -120,6 +126,18 @@ function gameReducer(state, action) {
         players: [initialPlayerState(), initialPlayerState()],
         phase: 'idle',
       }
+
+    // Corrects bug where a player can have currentIndex > 0 but no classifications (e.g. comp starting at 2/24)
+    case 'RESET_PLAYER_IF_NOT_STARTED': {
+      const players = state.players.map((p, i) => {
+        const hasNoClassifications = !p.classifications || Object.keys(p.classifications).length === 0
+        if (p.assignedImageIds?.length > 0 && hasNoClassifications && (p.currentIndex ?? 0) > 0) {
+          return { ...p, currentIndex: 0 }
+        }
+        return p
+      })
+      return { ...state, players }
+    }
 
     default:
       return state
