@@ -358,7 +358,7 @@ export default function Results() {
             </div>
           )}
           <div className="flex flex-col items-center gap-4 mt-6">
-            <PrimaryButton theme="acusensus" onPress={() => setDetailOpenAcu(true)}>
+            <PrimaryButton theme={player?.pool === 'competitor' ? 'competitor' : 'acusensus'} onPress={() => setDetailOpenAcu(true)}>
               SEE DETAILED SCORE
             </PrimaryButton>
             {!isDual && player?.pool === 'acusensus' && (
