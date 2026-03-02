@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Title, PrimaryText, PrimaryButton } from '../components/ui'
 import { useGameState } from '../hooks/useGameState'
 
-const PLACEHOLDER_SIZE = 280
+const ICON_HEIGHT_PX = 180
 
 export default function PlayerMode() {
   const navigate = useNavigate()
@@ -45,12 +45,15 @@ export default function PlayerMode() {
           See the Acusensus difference for image classification
         </PrimaryText>
 
-        {/* Two columns: each has a red square centered above its button */}
+        {/* Two columns: icon above each button */}
         <div className="flex items-start justify-center gap-16 mt-12">
           <div className="flex flex-col items-center">
-            <div
-              className="rounded-ui bg-red-500 flex-shrink-0"
-              style={{ width: PLACEHOLDER_SIZE, height: PLACEHOLDER_SIZE }}
+            <img
+              src="/icons/icon_singlePlayer.svg"
+              alt=""
+              className="w-auto flex-shrink-0"
+              style={{ height: ICON_HEIGHT_PX }}
+              aria-hidden
             />
             <div className="mt-6">
               <PrimaryButton theme="acusensus" onPress={handleSinglePlayer}>
@@ -59,9 +62,12 @@ export default function PlayerMode() {
             </div>
           </div>
           <div className="flex flex-col items-center">
-            <div
-              className="rounded-ui bg-red-500 flex-shrink-0"
-              style={{ width: PLACEHOLDER_SIZE, height: PLACEHOLDER_SIZE }}
+            <img
+              src="/icons/icon_doublePlayer.svg"
+              alt=""
+              className="w-auto flex-shrink-0"
+              style={{ height: ICON_HEIGHT_PX }}
+              aria-hidden
             />
             <div className="mt-6">
               <PrimaryButton theme="acusensus" onPress={handleDoublePlayer}>

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameContext } from '../context/GameContext'
 import { useGameState } from '../hooks/useGameState'
-import { Title, PrimaryButton, SecondaryButton } from '../components/ui'
+import { Title, PrimaryText, PrimaryButton, SecondaryButton } from '../components/ui'
 import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
 const PANEL_WIDTH_PX = 994
@@ -23,6 +23,19 @@ const SORTING_LABELS = {
   distracted: 'distracted driving',
   safe: 'safe driving',
 }
+const SORTING_ICONS = {
+  seatbelt: '/icons/icon_seatbelt.svg',
+  distracted: '/icons/icon_distracted.svg',
+  safe: '/icons/icon_safeDriving.svg',
+}
+// Instruction popup: same images + sorting overlays as main Instructions page
+const INSTRUCTION_IMG_W_PX = 368
+const INSTRUCTION_IMG_H_PX = 274
+const INSTRUCTION_IMAGES = [
+  { key: 'seatbelt', src: '/images/instructions/seatbelt.png', label: 'seatbelt violation', icon: '/icons/icon_seatbelt.svg', isSafe: false },
+  { key: 'distracted', src: '/images/instructions/distracted.png', label: 'distracted driving', icon: '/icons/icon_distracted.svg', isSafe: false },
+  { key: 'safe', src: '/images/instructions/safe.png', label: 'safe driving', icon: '/icons/icon_safeDriving.svg', isSafe: true },
+]
 
 function formatMMSS(totalSeconds) {
   const m = Math.floor(totalSeconds / 60)
@@ -46,6 +59,7 @@ function PlayerGameColumn({
   onClassify,
   onUndo,
   isPlaying,
+  isDual = false,
 }) {
   const pool = player?.pool ?? 'acusensus'
   const imageIds = player?.assignedImageIds ?? []
@@ -59,9 +73,12 @@ function PlayerGameColumn({
   return (
     <div className="flex flex-col gap-4 shrink-0" style={{ width: panelWidth }}>
       <div
-        className={`rounded-ui flex items-center justify-center shrink-0 ${panelBg}`}
+        className={`rounded-ui flex items-center justify-center shrink-0 gap-3 ${panelBg}`}
         style={{ width: panelWidth, height: topPanelHeight }}
       >
+        {pool === 'acusensus' && (
+          <img src="/icons/icon_acuLogo.svg" alt="" className="h-[64px] w-auto shrink-0" aria-hidden />
+        )}
         <span className="text-text-panel text-primary-text">{headerLabel}</span>
       </div>
       <div
@@ -77,7 +94,11 @@ function PlayerGameColumn({
             />
           ) : (
             <span className="text-text-default text-secondary-text text-center">
-              {isPlaying && imageIds.length === 0 ? 'No images' : 'Loading…'}
+              {isPlaying && imageIds.length === 0
+                ? 'No images'
+                : isDual && isPlaying && imageIds.length > 0
+                  ? 'Waiting for other player'
+                  : 'Loading…'}
             </span>
           )}
           {isPlaying && imageIds.length > 0 && currentIndex > 0 && (
@@ -122,11 +143,13 @@ function PlayerGameColumn({
               className={`
                 w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                 bg-btn-sorting-bg opacity-100
+                flex flex-col items-center justify-center gap-2
                 ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
                 disabled:opacity-50 disabled:cursor-not-allowed
                 hover:enabled:opacity-90 active:enabled:scale-[0.98]
               `}
             >
+              <img src={SORTING_ICONS[label]} alt="" className="w-14 h-14 shrink-0" aria-hidden />
               {SORTING_LABELS[label]}
             </button>
           )
@@ -141,7 +164,10 @@ export default function GamePlay() {
   const { gameState, dispatch } = useGameContext()
   const { classifyImage, completeGame, undoToPreviousImage } = useGameState()
   const startTimeRef = useRef(null)
+  const playerElapsedOnFinishRef = useRef({ 0: null, 1: null }) // dual mode: seconds when each player finished their last image
+  const pausedElapsedRef = useRef(null) // when non-null, timer is paused and this is the elapsed seconds at pause
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [confirmPopup, setConfirmPopup] = useState(null) // null | 'home' | 'instructions' | 'pause'
 
   const isDual = gameState.playerMode === 'dual'
   const player0 = gameState.players[0]
@@ -201,17 +227,25 @@ export default function GamePlay() {
       startTimeRef.current !== null
         ? Math.floor((Date.now() - startTimeRef.current) / 1000)
         : elapsedSeconds
-    completeGame(isDual ? [finalElapsed, finalElapsed] : finalElapsed)
+    if (isDual) {
+      const t0 = playerElapsedOnFinishRef.current[0] ?? finalElapsed
+      const t1 = playerElapsedOnFinishRef.current[1] ?? finalElapsed
+      completeGame([t0, t1])
+    } else {
+      completeGame(finalElapsed)
+    }
   }, [isRoundComplete, completeGame, elapsedSeconds, isDual])
 
-  // Timer: start when round starts, update every second, stop when round complete
+  // Timer: start when round starts, update every second, stop when round complete (paused while confirm popup is open)
   useEffect(() => {
     if (!isPlaying) return
     if (startTimeRef.current === null) {
       startTimeRef.current = Date.now()
+      playerElapsedOnFinishRef.current = { 0: null, 1: null }
       setElapsedSeconds(0)
     }
     const id = setInterval(() => {
+      if (pausedElapsedRef.current !== null) return // pause timer while any confirm popup is open
       setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000))
     }, 1000)
     return () => clearInterval(id)
@@ -224,6 +258,21 @@ export default function GamePlay() {
     }
   }, [gameState.phase])
 
+  const openConfirmPopup = (type) => {
+    if (startTimeRef.current !== null) {
+      pausedElapsedRef.current = Math.floor((Date.now() - startTimeRef.current) / 1000)
+    }
+    setConfirmPopup(type)
+  }
+  const closeConfirmPopupAndResume = () => {
+    if (pausedElapsedRef.current !== null) {
+      startTimeRef.current = Date.now() - pausedElapsedRef.current * 1000
+      setElapsedSeconds(pausedElapsedRef.current)
+      pausedElapsedRef.current = null
+    }
+    setConfirmPopup(null)
+  }
+
   const handleClassify = (label) => {
     if (!currentImageId || !isPlaying) return
     classifyImage(0, currentImageId, label)
@@ -231,6 +280,16 @@ export default function GamePlay() {
 
   const handleClassifyDual = (playerIndex, imageId, label) => {
     if (!imageId || !isPlaying) return
+    // Record this player's elapsed time when they classify their last image (before state updates)
+    if (isDual && startTimeRef.current !== null) {
+      const p = gameState.players[playerIndex]
+      const ids = p?.assignedImageIds ?? []
+      const idx = p?.currentIndex ?? 0
+      if (ids.length > 0 && idx + 1 >= ids.length) {
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000)
+        playerElapsedOnFinishRef.current[playerIndex] = elapsed
+      }
+    }
     classifyImage(playerIndex, imageId, label)
   }
 
@@ -243,16 +302,16 @@ export default function GamePlay() {
     <div className="w-full h-full bg-page-bg flex items-center justify-center p-3 relative">
       {/* Upper left: home and info buttons */}
       <div className="absolute top-3 left-3 flex flex-row items-center gap-3">
-        <SecondaryButton onPress={() => navigate('/')}>
+        <SecondaryButton onPress={() => openConfirmPopup('home')}>
           <img src="/icons/icon_home.svg" alt="Home" className="w-[28px] h-[28px]" />
         </SecondaryButton>
-        <SecondaryButton onPress={() => {}}>
+        <SecondaryButton onPress={() => openConfirmPopup('instructions')}>
           <img src="/icons/icon_i.svg" alt="Information" className="w-[28px] h-[28px]" />
         </SecondaryButton>
       </div>
       {/* Upper right: pause button and timer */}
       <div className="absolute top-3 right-3 flex flex-row items-center gap-3">
-        <SecondaryButton onPress={() => {}}>
+        <SecondaryButton onPress={() => openConfirmPopup('pause')}>
           <img src="/icons/icon_pause.svg" alt="Pause" className="w-[28px] h-[28px]" />
         </SecondaryButton>
         {showTimer && (
@@ -282,6 +341,7 @@ export default function GamePlay() {
             onClassify={handleClassifyDual}
             onUndo={undoToPreviousImage}
             isPlaying={isPlaying}
+            isDual
           />
           <PlayerGameColumn
             playerIndex={1}
@@ -295,6 +355,7 @@ export default function GamePlay() {
             onClassify={handleClassifyDual}
             onUndo={undoToPreviousImage}
             isPlaying={isPlaying}
+            isDual
           />
         </div>
       ) : (
@@ -305,9 +366,12 @@ export default function GamePlay() {
         <div className="flex flex-col gap-4 shrink-0" style={{ width: PANEL_WIDTH_PX }}>
           {/* Top panel — "Our Solution" */}
           <div
-            className={`rounded-ui flex items-center justify-center shrink-0 ${pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
+            className={`rounded-ui flex items-center justify-center shrink-0 gap-3 ${pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
             style={{ width: PANEL_WIDTH_PX, height: TOP_PANEL_H_PX }}
           >
+            {pool !== 'competitor' && (
+              <img src="/icons/icon_acuLogo.svg" alt="" className="h-[64px] w-auto shrink-0" aria-hidden />
+            )}
             <span className="text-text-panel text-primary-text">Our Solution</span>
           </div>
 
@@ -386,11 +450,13 @@ export default function GamePlay() {
                     className={`
                       w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                       bg-btn-sorting-bg opacity-100
+                      flex flex-col items-center justify-center gap-2
                       ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
                       disabled:opacity-50 disabled:cursor-not-allowed
                       hover:enabled:opacity-90 active:enabled:scale-[0.98]
                     `}
                   >
+                    <img src={SORTING_ICONS[label]} alt="" className="w-14 h-14 shrink-0" aria-hidden />
                     {SORTING_LABELS[label]}
                   </button>
                 )
@@ -418,6 +484,109 @@ export default function GamePlay() {
           <div style={{ height: 540 }} aria-hidden />
           <PrimaryButton theme="acusensus" onPress={() => navigate('/results')}>
             SEE RESULTS
+          </PrimaryButton>
+        </div>
+      </div>
+    )}
+
+    {/* Confirmation popup — Home (exit game) */}
+    {confirmPopup === 'home' && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-home-title"
+      >
+        <div className="flex flex-col items-center">
+          <PrimaryText id="confirm-home-title" as="p" className="text-text-default text-center">
+            Exit this game?
+          </PrimaryText>
+          <div style={{ height: 200 }} aria-hidden />
+          <div className="flex flex-col items-center gap-4">
+            <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
+              CONTINUE PLAYING
+            </PrimaryButton>
+            <PrimaryButton theme="acusensus" onPress={() => { setConfirmPopup(null); navigate('/') }}>
+              EXIT
+            </PrimaryButton>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Confirmation popup — Instructions */}
+    {confirmPopup === 'instructions' && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85 overflow-y-auto py-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-instructions-title"
+      >
+        <div className="flex flex-col items-center">
+          <Title id="confirm-instructions-title" className="text-text-default text-center">
+            How to play...
+          </Title>
+          <PrimaryText as="p" className="text-center max-w-[1400px] mt-8 px-8 text-text-default">
+            Determine if vehicle occupants are not wearing their seatbelt, are
+            illegally using their phones or are driving safely.
+            <br />
+            Use buttons to sort the photos.
+          </PrimaryText>
+          <div className="flex items-center justify-center gap-8 mt-12">
+            {INSTRUCTION_IMAGES.map(({ key, src, label, icon, isSafe }) => (
+              <div
+                key={key}
+                className="rounded-ui overflow-hidden flex-shrink-0 relative"
+                style={{ width: INSTRUCTION_IMG_W_PX, height: INSTRUCTION_IMG_H_PX }}
+              >
+                <img
+                  src={src}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  aria-hidden
+                />
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  aria-hidden
+                >
+                  <div
+                    className={`
+                      w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting text-center
+                      bg-btn-sorting-bg opacity-100
+                      flex flex-col items-center justify-center gap-2
+                      ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
+                    `}
+                  >
+                    <img src={icon} alt="" className="w-14 h-14 shrink-0" aria-hidden />
+                    {label}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ height: 200 }} aria-hidden />
+          <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
+            CONTINUE PLAYING
+          </PrimaryButton>
+        </div>
+      </div>
+    )}
+
+    {/* Confirmation popup — Pause */}
+    {confirmPopup === 'pause' && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-pause-title"
+      >
+        <div className="flex flex-col items-center">
+          <PrimaryText id="confirm-pause-title" as="p" className="text-text-default text-center">
+            Your game has been paused.
+          </PrimaryText>
+          <div style={{ height: 200 }} aria-hidden />
+          <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
+            CONTINUE PLAYING
           </PrimaryButton>
         </div>
       </div>

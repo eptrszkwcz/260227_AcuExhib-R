@@ -1,8 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { Title, PrimaryText, PrimaryButton } from '../components/ui'
 
-const PLACEHOLDER_W = 374
-const PLACEHOLDER_H = 274
+const INSTRUCTION_IMG_W_PX = 368
+const INSTRUCTION_IMG_H_PX = 274
+const INSTRUCTION_IMAGES = [
+  { key: 'seatbelt', src: '/images/instructions/seatbelt.png', label: 'seatbelt violation', icon: '/icons/icon_seatbelt.svg', isSafe: false },
+  { key: 'distracted', src: '/images/instructions/distracted.png', label: 'distracted driving', icon: '/icons/icon_distracted.svg', isSafe: false },
+  { key: 'safe', src: '/images/instructions/safe.png', label: 'safe driving', icon: '/icons/icon_safeDriving.svg', isSafe: true },
+]
 
 export default function Instructions() {
   const navigate = useNavigate()
@@ -24,20 +29,38 @@ export default function Instructions() {
           Use buttons to sort the photos.
         </PrimaryText>
 
-        {/* Three placeholder images side by side */}
+        {/* Three instruction images with sorting-button overlay (centered, not clickable) */}
         <div className="flex items-center justify-center gap-8 mt-12">
-          <div
-            className="rounded-ui bg-red-500 flex-shrink-0"
-            style={{ width: PLACEHOLDER_W, height: PLACEHOLDER_H }}
-          />
-          <div
-            className="rounded-ui bg-red-500 flex-shrink-0"
-            style={{ width: PLACEHOLDER_W, height: PLACEHOLDER_H }}
-          />
-          <div
-            className="rounded-ui bg-red-500 flex-shrink-0"
-            style={{ width: PLACEHOLDER_W, height: PLACEHOLDER_H }}
-          />
+          {INSTRUCTION_IMAGES.map(({ key, src, label, icon, isSafe }) => (
+            <div
+              key={key}
+              className="rounded-ui overflow-hidden flex-shrink-0 relative"
+              style={{ width: INSTRUCTION_IMG_W_PX, height: INSTRUCTION_IMG_H_PX }}
+            >
+              <img
+                src={src}
+                alt=""
+                className="w-full h-full object-cover"
+                aria-hidden
+              />
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                aria-hidden
+              >
+                <div
+                  className={`
+                    w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting text-center
+                    bg-btn-sorting-bg opacity-100
+                    flex flex-col items-center justify-center gap-2
+                    ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
+                  `}
+                >
+                  <img src={icon} alt="" className="w-14 h-14 shrink-0" aria-hidden />
+                  {label}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* CTA button */}
