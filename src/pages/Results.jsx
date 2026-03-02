@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
-import { SecondaryButton, SecondaryText, PrimaryButton } from '../components/ui'
+import { SecondaryButton, SecondaryText, PrimaryText, PrimaryButton } from '../components/ui'
 import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
 const RESULTS_LINGER_MS = Number(import.meta.env.VITE_RESULTS_LINGER_MS) || 15000
@@ -194,6 +194,7 @@ export default function Results() {
   const [detailOpenAcu, setDetailOpenAcu] = useState(false)
   const [detailOpenComp, setDetailOpenComp] = useState(false)
   const [pendingNavigateToAlternative, setPendingNavigateToAlternative] = useState(false)
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
 
   const isDual = gameState.playerMode === 'dual'
   const player0 = gameState.players[0]
@@ -246,7 +247,7 @@ export default function Results() {
   return (
     <div className="w-full h-full bg-page-bg flex flex-col items-center justify-center p-3 relative">
       <div className="absolute top-3 left-3">
-        <SecondaryButton onPress={() => navigate('/')}>
+        <SecondaryButton onPress={() => setShowExitConfirm(true)}>
           <img src="/icons/icon_home.svg" alt="Home" className="w-[28px] h-[28px]" />
         </SecondaryButton>
       </div>
@@ -375,6 +376,31 @@ export default function Results() {
                 SYSTEM'S IMAGES
               </PrimaryButton>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Exit Results confirmation popup */}
+      {showExitConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="results-exit-confirm-title"
+        >
+          <div className="flex flex-col items-center">
+            <PrimaryText id="results-exit-confirm-title" as="p" className="text-text-default text-center">
+              Exit Results page?
+            </PrimaryText>
+            <div style={{ height: 200 }} aria-hidden />
+            <div className="flex flex-col items-center gap-4">
+              <PrimaryButton theme="acusensus" onPress={() => setShowExitConfirm(false)}>
+                STAY HERE
+              </PrimaryButton>
+              <PrimaryButton theme="acusensus" onPress={() => { setShowExitConfirm(false); navigate('/') }}>
+                EXIT
+              </PrimaryButton>
+            </div>
           </div>
         </div>
       )}
