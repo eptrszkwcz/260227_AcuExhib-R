@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameContext } from '../context/GameContext'
 import { SecondaryButton, SecondaryText, PrimaryButton } from '../components/ui'
+import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
 const RESULTS_LINGER_MS = Number(import.meta.env.VITE_RESULTS_LINGER_MS) || 15000
 // Set to true to pause auto-advance from Results during development; set back to false for production
@@ -18,6 +19,20 @@ const DUAL_RESULTS_PANEL_W_PX = 320
 const DUAL_RESULTS_GAP_PX = 212
 const DETAIL_PANEL_H_PX = 714
 const DETAIL_PANEL_GAP_TOP_PX = 12
+const DETAIL_ICON_PX = 78
+const DETAIL_THUMB_PANEL_W_PX = 480
+const DETAIL_THUMB_PX = 78
+const DETAIL_THUMB_RADIUS_PX = 16
+const DETAIL_CATEGORY_LABELS = {
+  seatbelt: 'Seatbelt Violation',
+  distracted: 'Distracted Driving',
+  safe: 'Safe Driving',
+}
+const DETAIL_ICONS = {
+  seatbelt: '/icons/icon_seatbelt.svg',
+  distracted: '/icons/icon_distracted.svg',
+  safe: '/icons/icon_safeDriving.svg',
+}
 
 function formatMMSS(totalSeconds) {
   if (totalSeconds == null || totalSeconds < 0) return '0:00'
@@ -78,6 +93,96 @@ function PlayerResultColumn({
           </span>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Detail score panel body: header row + three category rows (icon + thumbnail panel).
+ * Groups roundResults by correctLabel; shows 78×78 thumbnails with 4px red stroke when incorrect.
+ */
+function DetailScorePanelBody({ roundResults }) {
+  if (!roundResults || !Array.isArray(roundResults)) return null
+
+  const byCategory = { seatbelt: [], distracted: [], safe: [] }
+  for (const r of roundResults) {
+    const cat = r.correctLabel
+    if (byCategory[cat]) byCategory[cat].push(r)
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Header row */}
+      <div className="flex flex-row items-center gap-4 shrink-0">
+        <div style={{ width: DETAIL_ICON_PX }} className="text-text-panel font-medium">
+          Category
+        </div>
+        <div className="text-text-panel font-medium" style={{ width: DETAIL_THUMB_PANEL_W_PX }}>
+          Images
+        </div>
+      </div>
+      {IMAGE_CATEGORIES.map((category) => {
+        const results = byCategory[category] || []
+        const isSafe = category === 'safe'
+        const borderColor = isSafe ? 'rgba(28, 136, 84, 0.33)' : 'rgba(210, 62, 62, 0.33)'
+        return (
+          <div key={category} className="flex flex-row items-start gap-4 shrink-0">
+            <div
+              className="rounded-ui bg-btn-sorting-bg/65 flex items-center justify-center shrink-0 border-[3px] m-3"
+              style={{ width: DETAIL_ICON_PX, height: DETAIL_ICON_PX, borderColor }}
+            >
+              <img
+                src={DETAIL_ICONS[category]}
+                alt=""
+                className="w-10 h-10 object-contain"
+                aria-hidden
+              />
+            </div>
+            <div
+              className="rounded-ui flex flex-wrap gap-4 p-3 shrink-0"
+              style={{
+                width: DETAIL_THUMB_PANEL_W_PX,
+                background: 'rgba(228,228,228,0.3)',
+              }}
+            >
+              {results.map((result) => {
+                const meta = imageById[result.imageId]
+                const src = meta?.src ?? ''
+                const isIncorrect = !result.correct
+                return (
+                  <div
+                    key={result.imageId}
+                    className="relative shrink-0"
+                    style={{
+                      width: DETAIL_THUMB_PX,
+                      height: DETAIL_THUMB_PX,
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt=""
+                      className={`object-cover w-full h-full ${isIncorrect ? 'border-2 border-[#FF0000]' : ''}`}
+                      style={{
+                        borderRadius: DETAIL_THUMB_RADIUS_PX,
+                      }}
+                    />
+                    {isIncorrect && (
+                      <div
+                        className="absolute inset-0 bg-[#FF0000] pointer-events-none"
+                        style={{
+                          borderRadius: DETAIL_THUMB_RADIUS_PX,
+                          opacity: 0.2,
+                        }}
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -149,7 +254,7 @@ export default function Results() {
             />
             {detailOpenAcu && (
               <div
-                className="absolute left-0 z-10 rounded-ui bg-panel-acusensus"
+                className="absolute left-0 z-10 rounded-ui bg-panel-acusensus flex flex-col"
                 style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
               >
                 <div className="absolute top-2 right-2">
@@ -159,6 +264,9 @@ export default function Results() {
                   >
                     <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                   </SecondaryButton>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
+                  <DetailScorePanelBody roundResults={player0?.roundResults} />
                 </div>
               </div>
             )}
@@ -182,7 +290,7 @@ export default function Results() {
             />
             {detailOpenComp && (
               <div
-                className="absolute left-0 z-10 rounded-ui bg-panel-competitor"
+                className="absolute left-0 z-10 rounded-ui bg-panel-competitor flex flex-col"
                 style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
               >
                 <div className="absolute top-2 right-2">
@@ -192,6 +300,9 @@ export default function Results() {
                   >
                     <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                   </SecondaryButton>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
+                  <DetailScorePanelBody roundResults={player1?.roundResults} />
                 </div>
               </div>
             )}
@@ -214,7 +325,7 @@ export default function Results() {
           />
           {detailOpenAcu && (
             <div
-              className="absolute left-0 z-10 rounded-ui bg-panel-acusensus"
+              className="absolute left-0 z-10 rounded-ui bg-panel-acusensus flex flex-col"
               style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: DETAIL_PANEL_H_PX }}
             >
               <div className="absolute top-2 right-2">
@@ -224,6 +335,9 @@ export default function Results() {
                 >
                   <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                 </SecondaryButton>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
+                <DetailScorePanelBody roundResults={player?.roundResults} />
               </div>
             </div>
           )}
