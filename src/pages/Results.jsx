@@ -21,7 +21,10 @@ const DETAIL_PANEL_H_PX = 714
 const DETAIL_PANEL_GAP_TOP_PX = 12
 const DETAIL_ICON_PX = 78
 const DETAIL_THUMB_PANEL_W_PX = 480
+const DETAIL_THUMB_PANEL_W_PX_SINGLE = 680
 const DETAIL_THUMB_PX = 78
+const DETAIL_THUMB_PX_SINGLE = 96
+const DETAIL_ICON_PX_SINGLE = 96
 const DETAIL_THUMB_RADIUS_PX = 16
 const DETAIL_CATEGORY_LABELS = {
   seatbelt: 'Seatbelt Violation',
@@ -65,13 +68,13 @@ function PlayerResultColumn({
         )}
         <span className="text-text-panel text-primary-text">{headerLabel}</span>
       </div>
-      <div className="flex flex-col items-center gap-2" style={{ width: resultsPanelWidth }}>
-        <SecondaryText as="p" className="text-center">
+      <div className="flex flex-col items-center gap-2 w-full">
+        <SecondaryText as="p" className="text-center whitespace-nowrap">
           Images correctly classified
         </SecondaryText>
         <div
           className={`rounded-ui flex flex-col items-center justify-center ${panelBg} shadow-btn py-8 px-12 w-full`}
-          style={{ minHeight: 200 }}
+          style={{ width: resultsPanelWidth, minHeight: 200 }}
         >
           <span className="text-text-panel font-bold text-[104px] tabular-nums">
             {score.percent}%
@@ -81,12 +84,13 @@ function PlayerResultColumn({
           </span>
         </div>
       </div>
-      <div className="flex flex-col items-center gap-2" style={{ width: resultsPanelWidth }}>
+      <div className="flex flex-col items-center gap-2 w-full">
         <SecondaryText as="p" className="text-center">
           Time to completion
         </SecondaryText>
         <div
           className={`rounded-ui flex items-center justify-center ${panelBg} shadow-btn py-4 px-10 w-full`}
+          style={{ width: resultsPanelWidth }}
         >
           <span className="text-text-panel font-bold text-5xl tabular-nums">
             {formatMMSS(elapsedSeconds)}
@@ -101,7 +105,12 @@ function PlayerResultColumn({
  * Detail score panel body: header row + three category rows (icon + thumbnail panel).
  * Groups roundResults by correctLabel; shows 78×78 thumbnails with 4px red stroke when incorrect.
  */
-function DetailScorePanelBody({ roundResults }) {
+function DetailScorePanelBody({
+  roundResults,
+  thumbPanelWidthPx = DETAIL_THUMB_PANEL_W_PX,
+  iconSizePx = DETAIL_ICON_PX,
+  thumbSizePx = DETAIL_THUMB_PX,
+}) {
   if (!roundResults || !Array.isArray(roundResults)) return null
 
   const byCategory = { seatbelt: [], distracted: [], safe: [] }
@@ -109,15 +118,22 @@ function DetailScorePanelBody({ roundResults }) {
     const cat = r.correctLabel
     if (byCategory[cat]) byCategory[cat].push(r)
   }
+  const iconInnerSize = Math.round(iconSizePx * 0.51)
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Header row */}
+      {/* Header row — first column width includes icon margin (m-3 = 12px each side) so Category centers over icons */}
       <div className="flex flex-row items-center gap-4 shrink-0">
-        <div style={{ width: DETAIL_ICON_PX }} className="text-text-panel font-medium">
+        <div
+          style={{ width: iconSizePx + 24, fontSize: 24 }}
+          className="text-text-panel font-medium flex justify-center text-center"
+        >
           Category
         </div>
-        <div className="text-text-panel font-medium" style={{ width: DETAIL_THUMB_PANEL_W_PX }}>
+        <div
+          style={{ width: thumbPanelWidthPx, fontSize: 24 }}
+          className="text-text-panel font-medium flex justify-center text-center"
+        >
           Images
         </div>
       </div>
@@ -129,19 +145,20 @@ function DetailScorePanelBody({ roundResults }) {
           <div key={category} className="flex flex-row items-start gap-4 shrink-0">
             <div
               className="rounded-ui bg-btn-sorting-bg/65 flex items-center justify-center shrink-0 border-[3px] m-3"
-              style={{ width: DETAIL_ICON_PX, height: DETAIL_ICON_PX, borderColor }}
+              style={{ width: iconSizePx, height: iconSizePx, borderColor }}
             >
               <img
                 src={DETAIL_ICONS[category]}
                 alt=""
-                className="w-10 h-10 object-contain"
+                className="object-contain"
+                style={{ width: iconInnerSize, height: iconInnerSize }}
                 aria-hidden
               />
             </div>
             <div
               className="rounded-ui flex flex-wrap gap-4 p-3 shrink-0"
               style={{
-                width: DETAIL_THUMB_PANEL_W_PX,
+                width: thumbPanelWidthPx,
                 background: 'rgba(228,228,228,0.3)',
               }}
             >
@@ -154,8 +171,8 @@ function DetailScorePanelBody({ roundResults }) {
                     key={result.imageId}
                     className="relative shrink-0"
                     style={{
-                      width: DETAIL_THUMB_PX,
-                      height: DETAIL_THUMB_PX,
+                      width: thumbSizePx,
+                      height: thumbSizePx,
                     }}
                   >
                     <img
@@ -282,7 +299,7 @@ export default function Results() {
                     <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                   </SecondaryButton>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
+                <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
                   <DetailScorePanelBody roundResults={player0?.roundResults} />
                 </div>
               </div>
@@ -318,7 +335,7 @@ export default function Results() {
                     <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                   </SecondaryButton>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
+                <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
                   <DetailScorePanelBody roundResults={player1?.roundResults} />
                 </div>
               </div>
@@ -331,7 +348,10 @@ export default function Results() {
           </div>
         </div>
       ) : (
-        <div className="relative flex flex-col items-center gap-6" style={{ width: TITLE_PANEL_W_PX }}>
+        <div
+          className="relative flex flex-col items-center gap-6"
+          style={{ width: TITLE_PANEL_W_PX, ...(player?.pool === 'competitor' ? { marginTop: -96 } : {}) }}
+        >
           <PlayerResultColumn
             headerLabel={player?.pool === 'competitor' ? 'Alternative System' : 'Our Solution'}
             pool={player.pool ?? 'acusensus'}
@@ -343,7 +363,7 @@ export default function Results() {
           {detailOpenAcu && (
             <div
               className={`absolute left-0 z-10 rounded-ui flex flex-col ${player?.pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
-              style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: DETAIL_PANEL_H_PX }}
+              style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: 744 }}
             >
               <div className="absolute top-2 right-2">
                 <SecondaryButton
@@ -353,8 +373,13 @@ export default function Results() {
                   <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                 </SecondaryButton>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto pt-12 px-4 pb-4 flex flex-col items-center">
-                <DetailScorePanelBody roundResults={player?.roundResults} />
+              <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
+                <DetailScorePanelBody
+                roundResults={player?.roundResults}
+                thumbPanelWidthPx={DETAIL_THUMB_PANEL_W_PX_SINGLE}
+                iconSizePx={DETAIL_ICON_PX_SINGLE}
+                thumbSizePx={DETAIL_THUMB_PX_SINGLE}
+              />
               </div>
             </div>
           )}
