@@ -93,7 +93,11 @@ function PlayerGameColumn({
               className="w-full h-full object-cover rounded-ui"
             />
           ) : (
-            <span className="text-text-default text-secondary-text text-center">
+            <span
+              className={`text-text-default text-secondary-text text-center ${
+                isDual && isPlaying && imageIds.length > 0 ? '!text-white' : ''
+              }`}
+            >
               {isPlaying && imageIds.length === 0
                 ? 'No images'
                 : isDual && isPlaying && imageIds.length > 0
