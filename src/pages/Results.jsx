@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGameContext } from '../context/GameContext'
+import { useGameState } from '../hooks/useGameState'
 import { SecondaryButton, SecondaryText, PrimaryButton } from '../components/ui'
 import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
@@ -190,9 +190,10 @@ function DetailScorePanelBody({ roundResults }) {
 export default function Results() {
   const navigate = useNavigate()
   const timerRef = useRef(null)
-  const { gameState } = useGameContext()
+  const { gameState, startGame } = useGameState()
   const [detailOpenAcu, setDetailOpenAcu] = useState(false)
   const [detailOpenComp, setDetailOpenComp] = useState(false)
+  const [pendingNavigateToAlternative, setPendingNavigateToAlternative] = useState(false)
 
   const isDual = gameState.playerMode === 'dual'
   const player0 = gameState.players[0]
@@ -210,7 +211,9 @@ export default function Results() {
     player1.score.total > 0
   const hasResults = isDual ? hasResultsDual : hasResultsSingle
 
+  // Redirect to home when no results or not complete; skip when pending navigate to alternative round
   useEffect(() => {
+    if (pendingNavigateToAlternative) return
     if (!hasResults || gameState.phase !== 'complete') {
       navigate('/', { replace: true })
       return
@@ -223,7 +226,20 @@ export default function Results() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [hasResults, gameState.phase, navigate])
+  }, [pendingNavigateToAlternative, hasResults, gameState.phase, navigate])
+
+  // When user chose "play with alternative": after game state is updated, navigate to gameplay
+  useEffect(() => {
+    if (!pendingNavigateToAlternative) return
+    if (gameState.phase !== 'playing' || gameState.playerMode !== 'single') return
+    const p0 = gameState.players[0]
+    if (p0?.pool !== 'competitor') return
+    const id = setTimeout(() => {
+      navigate('/gameplay')
+      setPendingNavigateToAlternative(false)
+    }, 0)
+    return () => clearTimeout(id)
+  }, [pendingNavigateToAlternative, gameState.phase, gameState.playerMode, gameState.players, navigate])
 
   if (!hasResults || gameState.phase !== 'complete') return null
 
@@ -316,7 +332,7 @@ export default function Results() {
       ) : (
         <div className="relative flex flex-col items-center gap-6" style={{ width: TITLE_PANEL_W_PX }}>
           <PlayerResultColumn
-            headerLabel="Our Solution"
+            headerLabel={player?.pool === 'competitor' ? 'Alternative System' : 'Our Solution'}
             pool={player.pool ?? 'acusensus'}
             score={score}
             elapsedSeconds={elapsedSeconds}
@@ -325,13 +341,13 @@ export default function Results() {
           />
           {detailOpenAcu && (
             <div
-              className="absolute left-0 z-10 rounded-ui bg-panel-acusensus flex flex-col"
+              className={`absolute left-0 z-10 rounded-ui flex flex-col ${player?.pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
               style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: DETAIL_PANEL_H_PX }}
             >
               <div className="absolute top-2 right-2">
                 <SecondaryButton
                   onPress={() => setDetailOpenAcu(false)}
-                  className="!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]"
+                  className={player?.pool === 'competitor' ? '!bg-[#B76BB7] !shadow-[inset_0_0_0_3px_#AC4CAC,-1px_7px_12px_0px_rgba(0,0,0,0.25)]' : '!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]'}
                 >
                   <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
                 </SecondaryButton>
@@ -345,11 +361,20 @@ export default function Results() {
             <PrimaryButton theme="acusensus" onPress={() => setDetailOpenAcu(true)}>
               SEE DETAILED SCORE
             </PrimaryButton>
-            <PrimaryButton theme="acusensus" onPress={() => {}} className="!text-[38px]">
-              PLAY WITH THE ALTERNATIVE
-              <br />
-              SYSTEM'S IMAGES
-            </PrimaryButton>
+            {!isDual && player?.pool === 'acusensus' && (
+              <PrimaryButton
+                theme="acusensus"
+                onPress={() => {
+                  startGame({ mode: 'single', p0pool: 'competitor' })
+                  setPendingNavigateToAlternative(true)
+                }}
+                className="!text-[38px]"
+              >
+                PLAY WITH THE ALTERNATIVE
+                <br />
+                SYSTEM'S IMAGES
+              </PrimaryButton>
+            )}
           </div>
         </div>
       )}

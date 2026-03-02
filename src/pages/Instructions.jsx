@@ -49,7 +49,7 @@ export default function Instructions() {
               >
                 <div
                   className={`
-                    w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
+                    w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting text-center
                     bg-btn-sorting-bg opacity-100
                     flex flex-col items-center justify-center gap-2
                     ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
