@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useGameContext } from '../context/GameContext'
 import { useGameState } from '../hooks/useGameState'
-import { Title, PrimaryText, PrimaryButton, SecondaryButton } from '../components/ui'
+import { Title, PrimaryText, PrimaryButton, SecondaryButton, AnimatedModal } from '../components/ui'
 import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
 const PANEL_WIDTH_PX = 994
@@ -102,7 +103,9 @@ function PlayerGameColumn({
                 ? 'No images'
                 : isDual && isPlaying && imageIds.length > 0
                   ? 'Waiting for other player'
-                  : 'Loading…'}
+                  : !isPlaying && imageIds.length > 0
+                    ? ''
+                    : 'Loading…'}
             </span>
           )}
           {isPlaying && imageIds.length > 0 && currentIndex > 0 && (
@@ -148,7 +151,8 @@ function PlayerGameColumn({
                 w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                 bg-btn-sorting-bg opacity-100
                 flex flex-col items-center justify-center gap-2
-                ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
+                transition-shadow duration-300 ease-out
+                ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe active:enabled:shadow-btn-sorting-safe-active' : 'text-[#D23E3E] shadow-btn-sorting-danger active:enabled:shadow-btn-sorting-danger-active'}
                 disabled:opacity-50 disabled:cursor-not-allowed
                 hover:enabled:opacity-90 active:enabled:scale-[0.98]
               `}
@@ -172,6 +176,9 @@ export default function GamePlay() {
   const pausedElapsedRef = useRef(null) // when non-null, timer is paused and this is the elapsed seconds at pause
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [confirmPopup, setConfirmPopup] = useState(null) // null | 'home' | 'instructions' | 'pause'
+  const [countdownRemaining, setCountdownRemaining] = useState(null) // 3 | 2 | 1 | null (null = done or not started)
+  const [countdownFadingOut, setCountdownFadingOut] = useState(false)
+  const [countdownHasStarted, setCountdownHasStarted] = useState(false) // true once we've kicked off the countdown (so overlay is "active" until then)
 
   const isDual = gameState.playerMode === 'dual'
   const player0 = gameState.players[0]
@@ -202,6 +209,9 @@ export default function GamePlay() {
   const pool = player?.pool ?? 'acusensus'
   const totalImages = pool === 'competitor' ? TOTAL_COMP_IMAGES : TOTAL_ACU_IMAGES
   const currentPosition = Math.min(currentIndex + 1, totalImages)
+  // Overlay visible until countdown has run and faded (so timer never runs during it)
+  const showCountdownOverlay = !countdownHasStarted || countdownRemaining !== null || countdownFadingOut
+  const timerDisplaySeconds = showCountdownOverlay ? 0 : elapsedSeconds
   const showTimer =
     (isPlaying || gameState.phase === 'complete') &&
     (isDual ? (player0?.assignedImageIds?.length ?? 0) > 0 || (player1?.assignedImageIds?.length ?? 0) > 0 : (player?.assignedImageIds?.length ?? 0) > 0)
@@ -225,6 +235,28 @@ export default function GamePlay() {
     if (needsReset) dispatch({ type: 'RESET_PLAYER_IF_NOT_STARTED' })
   }, [isDual, isPlaying, gameState.players, dispatch])
 
+  // Start countdown when entering gameplay (only once per mount)
+  useEffect(() => {
+    if (isPlaying && !countdownHasStarted) {
+      setCountdownHasStarted(true)
+      setCountdownRemaining(3)
+    }
+  }, [isPlaying, countdownHasStarted])
+
+  // Countdown tick: 3 → 2 → 1 → fade out
+  useEffect(() => {
+    if (countdownRemaining === null || countdownRemaining <= 0) return
+    const id = setTimeout(() => {
+      if (countdownRemaining === 1) {
+        setCountdownRemaining(null)
+        setCountdownFadingOut(true)
+      } else {
+        setCountdownRemaining(countdownRemaining - 1)
+      }
+    }, 1000)
+    return () => clearTimeout(id)
+  }, [countdownRemaining])
+
   useEffect(() => {
     if (!isRoundComplete) return
     const finalElapsed =
@@ -240,9 +272,9 @@ export default function GamePlay() {
     }
   }, [isRoundComplete, completeGame, elapsedSeconds, isDual])
 
-  // Timer: start when round starts, update every second, stop when round complete (paused while confirm popup is open)
+  // Timer: start only when countdown overlay is gone (timer visible but shows 00:00 until then)
   useEffect(() => {
-    if (!isPlaying) return
+    if (!isPlaying || showCountdownOverlay) return
     if (startTimeRef.current === null) {
       startTimeRef.current = Date.now()
       playerElapsedOnFinishRef.current = { 0: null, 1: null }
@@ -253,7 +285,7 @@ export default function GamePlay() {
       setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000))
     }, 1000)
     return () => clearInterval(id)
-  }, [isPlaying])
+  }, [isPlaying, showCountdownOverlay])
 
   // When round completes, set final elapsed time (timer stops)
   useEffect(() => {
@@ -304,6 +336,39 @@ export default function GamePlay() {
   return (
     <>
     <div className="w-full h-full bg-page-bg flex items-center justify-center p-3 relative">
+      {/* Countdown overlay: "Start playing in..." then 5…1, then fade away */}
+      {showCountdownOverlay && (
+        <motion.div
+          className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-[#DCDCDC]/85"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: countdownFadingOut ? 0 : 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          onAnimationComplete={() => {
+            if (countdownFadingOut) setCountdownFadingOut(false)
+          }}
+        >
+          <PrimaryText className="text-text-default text-center">
+            Start playing in...
+          </PrimaryText>
+          <div style={{ height: 48 }} aria-hidden />
+          {countdownRemaining !== null && (
+            <motion.div
+              className="inline-block"
+              animate={{
+                scale: [1, 1.1, 1],
+                y: [0, -6, 0],
+                opacity: [0.05, 1, 0.05],
+              }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Title className="text-text-default tabular-nums" aria-live="polite">
+                {countdownRemaining}
+              </Title>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
+
       {/* Upper left: home and info buttons */}
       <div className="absolute top-3 left-3 flex flex-row items-center gap-3">
         <SecondaryButton onPress={() => openConfirmPopup('home')}>
@@ -323,9 +388,9 @@ export default function GamePlay() {
             className="flex items-center justify-start text-text-default text-secondary-text font-semibold tabular-nums"
             style={{ width: 72 }}
             aria-live="polite"
-            aria-label={`Time elapsed: ${formatMMSS(elapsedSeconds)}`}
+            aria-label={`Time elapsed: ${formatMMSS(timerDisplaySeconds)}`}
           >
-            {formatMMSS(elapsedSeconds)}
+            {formatMMSS(timerDisplaySeconds)}
           </div>
         )}
       </div>
@@ -397,7 +462,9 @@ export default function GamePlay() {
                     ? 'No images in this round'
                     : isRoundComplete
                       ? 'Round complete'
-                      : 'Loading…'}
+                      : gameState.phase === 'complete'
+                        ? ''
+                        : 'Loading…'}
                 </span>
               )}
               {/* Undo — top left of image (custom colors by pool) */}
@@ -455,7 +522,8 @@ export default function GamePlay() {
                       w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                       bg-btn-sorting-bg opacity-100
                       flex flex-col items-center justify-center gap-2
-                      ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
+                      transition-shadow duration-300 ease-out
+                      ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe active:enabled:shadow-btn-sorting-safe-active' : 'text-[#D23E3E] shadow-btn-sorting-danger active:enabled:shadow-btn-sorting-danger-active'}
                       disabled:opacity-50 disabled:cursor-not-allowed
                       hover:enabled:opacity-90 active:enabled:scale-[0.98]
                     `}
@@ -473,127 +541,133 @@ export default function GamePlay() {
       )}
     </div>
 
-    {/* Completion popup — full screen when round is done */}
+    {/* Completion popup — full screen when round is done (2x longer transition into popup) */}
     {showCompletePopup && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="complete-popup-title"
+      <AnimatedModal
+        open={showCompletePopup}
+        onClose={() => {}}
+        ariaLabelledBy="complete-popup-title"
+        transitionDuration={0.6}
       >
-        <div className="flex flex-col items-center">
-          <Title id="complete-popup-title" className="text-text-default text-center">
-            Thank you for playing!
-          </Title>
-          <div style={{ height: 540 }} aria-hidden />
-          <PrimaryButton theme="acusensus" onPress={() => navigate('/results')}>
-            SEE RESULTS
-          </PrimaryButton>
-        </div>
-      </div>
+        {({ requestClose }) => (
+          <>
+            <Title id="complete-popup-title" className="text-text-default text-center">
+              Thank you for playing!
+            </Title>
+            <div style={{ height: 540 }} aria-hidden />
+            <PrimaryButton theme="acusensus" onPress={() => navigate('/results')}>
+              SEE RESULTS
+            </PrimaryButton>
+          </>
+        )}
+      </AnimatedModal>
     )}
 
     {/* Confirmation popup — Home (exit game) */}
     {confirmPopup === 'home' && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-home-title"
+      <AnimatedModal
+        open={confirmPopup === 'home'}
+        onClose={closeConfirmPopupAndResume}
+        ariaLabelledBy="confirm-home-title"
       >
-        <div className="flex flex-col items-center">
-          <PrimaryText id="confirm-home-title" as="p" className="text-text-default text-center">
-            Exit this game?
-          </PrimaryText>
-          <div style={{ height: 200 }} aria-hidden />
-          <div className="flex flex-col items-center gap-4">
-            <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
-              CONTINUE PLAYING
-            </PrimaryButton>
-            <PrimaryButton theme="acusensus" onPress={() => { setConfirmPopup(null); navigate('/') }}>
-              EXIT
-            </PrimaryButton>
-          </div>
-        </div>
-      </div>
+        {({ requestClose }) => (
+          <>
+            <PrimaryText id="confirm-home-title" as="p" className="text-text-default text-center">
+              Exit this game?
+            </PrimaryText>
+            <div style={{ height: 200 }} aria-hidden />
+            <div className="flex flex-col items-center gap-4">
+              <PrimaryButton theme="acusensus" onPress={() => requestClose()}>
+                CONTINUE PLAYING
+              </PrimaryButton>
+              <PrimaryButton theme="acusensus" onPress={() => requestClose(() => navigate('/'))}>
+                EXIT
+              </PrimaryButton>
+            </div>
+          </>
+        )}
+      </AnimatedModal>
     )}
 
     {/* Confirmation popup — Instructions */}
     {confirmPopup === 'instructions' && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85 overflow-y-auto py-8"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-instructions-title"
+      <AnimatedModal
+        open={confirmPopup === 'instructions'}
+        onClose={closeConfirmPopupAndResume}
+        ariaLabelledBy="confirm-instructions-title"
+        contentClassName="overflow-y-auto py-8"
       >
-        <div className="flex flex-col items-center">
-          <Title id="confirm-instructions-title" className="text-text-default text-center">
-            How to play...
-          </Title>
-          <PrimaryText as="p" className="text-center max-w-[1400px] mt-8 px-8 text-text-default">
-            Determine if vehicle occupants are not wearing their seatbelt, are
-            illegally using their phones or are driving safely.
-            <br />
-            Use buttons to sort the photos.
-          </PrimaryText>
-          <div className="flex items-center justify-center gap-8 mt-12">
-            {INSTRUCTION_IMAGES.map(({ key, src, label, icon, isSafe }) => (
-              <div
-                key={key}
-                className="rounded-ui overflow-hidden flex-shrink-0 relative"
-                style={{ width: INSTRUCTION_IMG_W_PX, height: INSTRUCTION_IMG_H_PX }}
-              >
-                <img
-                  src={src}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  aria-hidden
-                />
+        {({ requestClose }) => (
+          <>
+            <Title id="confirm-instructions-title" className="text-text-default text-center">
+              How to play...
+            </Title>
+            <PrimaryText as="p" className="text-center max-w-[1400px] mt-8 px-8 text-text-default">
+              Determine if vehicle occupants are not wearing their seatbelt, are
+              illegally using their phones or are driving safely.
+              <br />
+              Use buttons to sort the photos.
+            </PrimaryText>
+            <div className="flex items-center justify-center gap-8 mt-12">
+              {INSTRUCTION_IMAGES.map(({ key, src, label, icon, isSafe }) => (
                 <div
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  aria-hidden
+                  key={key}
+                  className="rounded-ui overflow-hidden flex-shrink-0 relative"
+                  style={{ width: INSTRUCTION_IMG_W_PX, height: INSTRUCTION_IMG_H_PX }}
                 >
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    aria-hidden
+                  />
                   <div
-                    className={`
-                      w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting text-center
-                      bg-btn-sorting-bg opacity-100
-                      flex flex-col items-center justify-center gap-2
-                      ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
-                    `}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    aria-hidden
                   >
-                    <img src={icon} alt="" className="w-14 h-14 shrink-0" aria-hidden />
-                    {label}
+                    <div
+                      className={`
+                        w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting text-center
+                        bg-btn-sorting-bg opacity-100
+                        flex flex-col items-center justify-center gap-2
+                        ${isSafe ? 'text-[#1C8854] shadow-btn-sorting-safe' : 'text-[#D23E3E] shadow-btn-sorting-danger'}
+                      `}
+                    >
+                      <img src={icon} alt="" className="w-14 h-14 shrink-0" aria-hidden />
+                      {label}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ height: 200 }} aria-hidden />
-          <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
-            CONTINUE PLAYING
-          </PrimaryButton>
-        </div>
-      </div>
+              ))}
+            </div>
+            <div style={{ height: 200 }} aria-hidden />
+            <PrimaryButton theme="acusensus" onPress={() => requestClose()}>
+              CONTINUE PLAYING
+            </PrimaryButton>
+          </>
+        )}
+      </AnimatedModal>
     )}
 
     {/* Confirmation popup — Pause */}
     {confirmPopup === 'pause' && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-pause-title"
+      <AnimatedModal
+        open={confirmPopup === 'pause'}
+        onClose={closeConfirmPopupAndResume}
+        ariaLabelledBy="confirm-pause-title"
       >
-        <div className="flex flex-col items-center">
-          <PrimaryText id="confirm-pause-title" as="p" className="text-text-default text-center">
-            Your game has been paused.
-          </PrimaryText>
-          <div style={{ height: 200 }} aria-hidden />
-          <PrimaryButton theme="acusensus" onPress={closeConfirmPopupAndResume}>
-            CONTINUE PLAYING
-          </PrimaryButton>
-        </div>
-      </div>
+        {({ requestClose }) => (
+          <>
+            <PrimaryText id="confirm-pause-title" as="p" className="text-text-default text-center">
+              Your game has been paused.
+            </PrimaryText>
+            <div style={{ height: 200 }} aria-hidden />
+            <PrimaryButton theme="acusensus" onPress={() => requestClose()}>
+              CONTINUE PLAYING
+            </PrimaryButton>
+          </>
+        )}
+      </AnimatedModal>
     )}
     </>
   )

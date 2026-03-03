@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useGameState } from '../hooks/useGameState'
-import { SecondaryButton, SecondaryText, PrimaryText, PrimaryButton } from '../components/ui'
+import { SecondaryButton, SecondaryText, PrimaryText, PrimaryButton, AnimatedModal } from '../components/ui'
 import { IMAGE_CATEGORIES, imageById } from '../data/imageManifest'
 
 const RESULTS_LINGER_MS = Number(import.meta.env.VITE_RESULTS_LINGER_MS) || 15000
@@ -229,9 +230,16 @@ export default function Results() {
     player1.score.total > 0
   const hasResults = isDual ? hasResultsDual : hasResultsSingle
 
+  // "Alternative round" state: single player just started with competitor images (we're about to go to gameplay)
+  const isAlternativeRoundStarting =
+    gameState.phase === 'playing' &&
+    gameState.playerMode === 'single' &&
+    gameState.players[0]?.pool === 'competitor'
+
   // Redirect to home when no results or not complete; skip when pending navigate to alternative round
+  // or when we're in alternative-round-starting state (avoids race where context updates before local state)
   useEffect(() => {
-    if (pendingNavigateToAlternative) return
+    if (pendingNavigateToAlternative || isAlternativeRoundStarting) return
     if (!hasResults || gameState.phase !== 'complete') {
       navigate('/', { replace: true })
       return
@@ -244,7 +252,7 @@ export default function Results() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [pendingNavigateToAlternative, hasResults, gameState.phase, navigate])
+  }, [pendingNavigateToAlternative, isAlternativeRoundStarting, hasResults, gameState.phase, navigate])
 
   // When user chose "play with alternative": after game state is updated, navigate to gameplay
   useEffect(() => {
@@ -286,24 +294,31 @@ export default function Results() {
               titlePanelWidth={DUAL_RESULTS_TITLE_W_PX}
               resultsPanelWidth={DUAL_RESULTS_PANEL_W_PX}
             />
-            {detailOpenAcu && (
-              <div
-                className="absolute left-0 z-10 rounded-ui bg-panel-acusensus flex flex-col"
-                style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
-              >
-                <div className="absolute top-2 right-2">
-                  <SecondaryButton
-                    onPress={() => setDetailOpenAcu(false)}
-                    className="!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]"
-                  >
-                    <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
-                  </SecondaryButton>
-                </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
-                  <DetailScorePanelBody roundResults={player0?.roundResults} />
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {detailOpenAcu && (
+                <motion.div
+                  key="detail-acu"
+                  className="absolute left-0 z-10 rounded-ui bg-panel-acusensus flex flex-col"
+                  style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                >
+                  <div className="absolute top-2 right-2">
+                    <SecondaryButton
+                      onPress={() => setDetailOpenAcu(false)}
+                      className="!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]"
+                    >
+                      <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
+                    </SecondaryButton>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
+                    <DetailScorePanelBody roundResults={player0?.roundResults} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="mt-6">
               <PrimaryButton theme="acusensus" onPress={() => setDetailOpenAcu(true)}>
                 SEE DETAILED SCORE
@@ -322,24 +337,31 @@ export default function Results() {
               titlePanelWidth={DUAL_RESULTS_TITLE_W_PX}
               resultsPanelWidth={DUAL_RESULTS_PANEL_W_PX}
             />
-            {detailOpenComp && (
-              <div
-                className="absolute left-0 z-10 rounded-ui bg-panel-competitor flex flex-col"
-                style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
-              >
-                <div className="absolute top-2 right-2">
-                  <SecondaryButton
-                    onPress={() => setDetailOpenComp(false)}
-                    className="!bg-[#B76BB7] !shadow-[inset_0_0_0_3px_#AC4CAC,-1px_7px_12px_0px_rgba(0,0,0,0.25)]"
-                  >
-                    <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
-                  </SecondaryButton>
-                </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
-                  <DetailScorePanelBody roundResults={player1?.roundResults} />
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {detailOpenComp && (
+                <motion.div
+                  key="detail-comp"
+                  className="absolute left-0 z-10 rounded-ui bg-panel-competitor flex flex-col"
+                  style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: DUAL_RESULTS_TITLE_W_PX, height: DETAIL_PANEL_H_PX }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                >
+                  <div className="absolute top-2 right-2">
+                    <SecondaryButton
+                      onPress={() => setDetailOpenComp(false)}
+                      className="!bg-[#B76BB7] !shadow-[inset_0_0_0_3px_#AC4CAC,-1px_7px_12px_0px_rgba(0,0,0,0.25)]"
+                    >
+                      <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
+                    </SecondaryButton>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
+                    <DetailScorePanelBody roundResults={player1?.roundResults} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="mt-6">
               <PrimaryButton theme="competitor" onPress={() => setDetailOpenComp(true)}>
                 SEE DETAILED SCORE
@@ -360,29 +382,36 @@ export default function Results() {
             titlePanelWidth={TITLE_PANEL_W_PX}
             resultsPanelWidth={RESULTS_PANEL_W_PX}
           />
-          {detailOpenAcu && (
-            <div
-              className={`absolute left-0 z-10 rounded-ui flex flex-col ${player?.pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
-              style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: 744 }}
-            >
-              <div className="absolute top-2 right-2">
-                <SecondaryButton
-                  onPress={() => setDetailOpenAcu(false)}
-                  className={player?.pool === 'competitor' ? '!bg-[#B76BB7] !shadow-[inset_0_0_0_3px_#AC4CAC,-1px_7px_12px_0px_rgba(0,0,0,0.25)]' : '!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]'}
-                >
-                  <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
-                </SecondaryButton>
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
-                <DetailScorePanelBody
-                roundResults={player?.roundResults}
-                thumbPanelWidthPx={DETAIL_THUMB_PANEL_W_PX_SINGLE}
-                iconSizePx={DETAIL_ICON_PX_SINGLE}
-                thumbSizePx={DETAIL_THUMB_PX_SINGLE}
-              />
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {detailOpenAcu && (
+              <motion.div
+                key="detail-single"
+                className={`absolute left-0 z-10 rounded-ui flex flex-col ${player?.pool === 'competitor' ? 'bg-panel-competitor' : 'bg-panel-acusensus'}`}
+                style={{ top: TITLE_PANEL_H_PX + DETAIL_PANEL_GAP_TOP_PX, width: TITLE_PANEL_W_PX, height: 744 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
+              >
+                <div className="absolute top-2 right-2">
+                  <SecondaryButton
+                    onPress={() => setDetailOpenAcu(false)}
+                    className={player?.pool === 'competitor' ? '!bg-[#B76BB7] !shadow-[inset_0_0_0_3px_#AC4CAC,-1px_7px_12px_0px_rgba(0,0,0,0.25)]' : '!bg-[#619BC2] !shadow-[inset_0_0_0_3px_#2E81B8,-1px_7px_12px_0px_rgba(0,0,0,0.25)]'}
+                  >
+                    <img src="/icons/icon_x.svg" alt="Close" className="w-[28px] h-[28px]" />
+                  </SecondaryButton>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pt-8 px-4 pb-4 flex flex-col items-center">
+                  <DetailScorePanelBody
+                    roundResults={player?.roundResults}
+                    thumbPanelWidthPx={DETAIL_THUMB_PANEL_W_PX_SINGLE}
+                    iconSizePx={DETAIL_ICON_PX_SINGLE}
+                    thumbSizePx={DETAIL_THUMB_PX_SINGLE}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div className="flex flex-col items-center gap-4 mt-6">
             <PrimaryButton theme={player?.pool === 'competitor' ? 'competitor' : 'acusensus'} onPress={() => setDetailOpenAcu(true)}>
               SEE DETAILED SCORE
@@ -407,27 +436,28 @@ export default function Results() {
 
       {/* Exit Results confirmation popup */}
       {showExitConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#DCDCDC]/85"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="results-exit-confirm-title"
+        <AnimatedModal
+          open={showExitConfirm}
+          onClose={() => setShowExitConfirm(false)}
+          ariaLabelledBy="results-exit-confirm-title"
         >
-          <div className="flex flex-col items-center">
-            <PrimaryText id="results-exit-confirm-title" as="p" className="text-text-default text-center">
-              Exit Results page?
-            </PrimaryText>
-            <div style={{ height: 200 }} aria-hidden />
-            <div className="flex flex-col items-center gap-4">
-              <PrimaryButton theme="acusensus" onPress={() => setShowExitConfirm(false)}>
-                STAY HERE
-              </PrimaryButton>
-              <PrimaryButton theme="acusensus" onPress={() => { setShowExitConfirm(false); navigate('/') }}>
-                EXIT
-              </PrimaryButton>
-            </div>
-          </div>
-        </div>
+          {({ requestClose }) => (
+            <>
+              <PrimaryText id="results-exit-confirm-title" as="p" className="text-text-default text-center">
+                Exit Results page?
+              </PrimaryText>
+              <div style={{ height: 200 }} aria-hidden />
+              <div className="flex flex-col items-center gap-4">
+                <PrimaryButton theme="acusensus" onPress={() => requestClose()}>
+                  STAY HERE
+                </PrimaryButton>
+                <PrimaryButton theme="acusensus" onPress={() => requestClose(() => navigate('/'))}>
+                  EXIT
+                </PrimaryButton>
+              </div>
+            </>
+          )}
+        </AnimatedModal>
       )}
     </div>
   )

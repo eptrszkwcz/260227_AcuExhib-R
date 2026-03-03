@@ -98,7 +98,11 @@ export default function Welcome() {
 
           {/* 540px vertical space then primary CTA */}
           <div className="mt-[540px]">
-            <PrimaryButton theme="acusensus" onPress={() => navigate('/instructions')}>
+            <PrimaryButton
+              theme="acusensus"
+              onPress={() => navigate('/instructions')}
+              className="animate-stroke-pulse"
+            >
               PUT OUR SYSTEM TO THE TEST
             </PrimaryButton>
           </div>

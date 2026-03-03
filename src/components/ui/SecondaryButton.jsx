@@ -24,6 +24,7 @@ export default function SecondaryButton({
         w-btn-secondary h-btn-secondary min-w-btn-secondary min-h-btn-secondary
         rounded-ui bg-btn-secondary-bg shadow-btn-secondary
         flex items-center justify-center text-text-default
+        transition-transform duration-150 ease-out
         disabled:opacity-50 disabled:cursor-not-allowed
         active:scale-[0.98]
         ${className}
