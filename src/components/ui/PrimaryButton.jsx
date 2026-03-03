@@ -40,6 +40,8 @@ export default function PrimaryButton({
         h-[96px] min-w-0
         py-[28px] px-[48px]
         rounded-ui
+        transition-transform duration-150 ease-out
+        active:scale-[0.97]
         ${bgClass}
         ${borderClass}
         shadow-btn

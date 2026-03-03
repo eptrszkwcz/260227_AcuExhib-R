@@ -3,6 +3,7 @@
  * All use design tokens from tailwind.config.js (colors, shadows, font sizes).
  */
 
+export { default as AnimatedModal } from './AnimatedModal'
 export { default as Panel } from './Panel'
 export { default as KioskButton } from './KioskButton'
 export { default as PrimaryButton } from './PrimaryButton'

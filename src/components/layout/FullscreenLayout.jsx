@@ -50,6 +50,7 @@ export default function FullscreenLayout({ children }) {
           width: CANVAS_W,
           height: CANVAS_H,
           transformOrigin: 'top left',
+          background: '#D9D9D9', // page-bg — so page transitions fade to this instead of black
         }}
       >
         {children}

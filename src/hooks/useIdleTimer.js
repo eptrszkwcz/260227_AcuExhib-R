@@ -16,25 +16,28 @@ import { useEffect, useRef } from 'react'
 export function useIdleTimer({ timeoutMs, onIdle }) {
   const timerRef = useRef(null)
   const onIdleRef = useRef(onIdle)
+  const timeoutMsRef = useRef(timeoutMs)
 
-  // Keep the callback ref up to date without re-registering listeners
   useEffect(() => {
     onIdleRef.current = onIdle
   }, [onIdle])
 
+  useEffect(() => {
+    timeoutMsRef.current = timeoutMs
+  }, [timeoutMs])
+
   const resetTimer = useRef(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    if (timeoutMs <= 0) return // disabled (e.g. pause for development)
+    const ms = timeoutMsRef.current
+    if (ms <= 0) return // disabled (e.g. pause for development)
     timerRef.current = setTimeout(() => {
       onIdleRef.current?.()
-    }, timeoutMs)
+    }, ms)
   }).current
 
   useEffect(() => {
-    // Start the timer immediately on mount
     resetTimer()
 
-    // { passive: true } — these listeners only reset the timer, never call preventDefault
     const opts = { passive: true }
     window.addEventListener('pointerdown', resetTimer, opts)
     window.addEventListener('pointermove', resetTimer, opts)
@@ -46,10 +49,12 @@ export function useIdleTimer({ timeoutMs, onIdle }) {
       window.removeEventListener('pointermove', resetTimer, opts)
       window.removeEventListener('keydown', resetTimer, opts)
     }
-    // timeoutMs is intentionally excluded: changing it mid-session has no effect.
-    // If timeout duration needs to change, remount the consuming component.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // When timeoutMs changes (e.g. user navigates to Results), restart timer with new duration
+  useEffect(() => {
+    resetTimer()
+  }, [timeoutMs, resetTimer])
 
   return { resetTimer }
 }

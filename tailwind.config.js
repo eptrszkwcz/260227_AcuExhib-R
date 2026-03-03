@@ -103,6 +103,19 @@ export default {
       },
 
       // ----------------------------------------------------------------
+      // Animations — e.g. Welcome CTA stroke pulse
+      // ----------------------------------------------------------------
+      keyframes: {
+        'stroke-pulse': {
+          '0%, 100%': { borderColor: '#2E81B8', borderWidth: '4px' },
+          '50%': { borderColor: '#4A9FD9', borderWidth: '4px' },
+        },
+      },
+      animation: {
+        'stroke-pulse': 'stroke-pulse 4s ease-in-out infinite',
+      },
+
+      // ----------------------------------------------------------------
       // Spacing — kiosk-specific component sizes
       // ----------------------------------------------------------------
       spacing: {
