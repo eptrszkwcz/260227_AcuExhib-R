@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useGameContext } from '../context/GameContext'
 import { useGameState } from '../hooks/useGameState'
 import { Title, PrimaryText, PrimaryButton, SecondaryButton, AnimatedModal } from '../components/ui'
@@ -87,18 +87,25 @@ function PlayerGameColumn({
         style={{ width: imagePanelWidth, height: imagePanelHeight }}
       >
         <div className="rounded-ui bg-transparent flex-1 flex items-center justify-center overflow-hidden relative">
-          {currentImage ? (
-            <img
-              src={currentImage.src}
-              alt="Driver scene to classify"
-              className="w-full h-full object-cover rounded-ui"
-            />
-          ) : (
-            <span
-              className={`text-text-default text-secondary-text text-center ${
-                isDual && isPlaying && imageIds.length > 0 ? '!text-white' : ''
-              }`}
-            >
+          <AnimatePresence initial={false}>
+            {currentImage ? (
+              <motion.img
+                key={currentImageId}
+                src={currentImage.src}
+                alt="Driver scene to classify"
+                className="absolute inset-0 w-full h-full object-cover rounded-ui"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            ) : (
+              <span
+                key="placeholder"
+                className={`text-text-default text-secondary-text text-center relative ${
+                  isDual && isPlaying && imageIds.length > 0 ? '!text-white' : ''
+                }`}
+              >
               {isPlaying && imageIds.length === 0
                 ? 'No images'
                 : isDual && isPlaying && imageIds.length > 0
@@ -106,8 +113,9 @@ function PlayerGameColumn({
                   : !isPlaying && imageIds.length > 0
                     ? ''
                     : 'Loading…'}
-            </span>
-          )}
+              </span>
+            )}
+          </AnimatePresence>
           {isPlaying && imageIds.length > 0 && currentIndex > 0 && (
             <div className="absolute top-0 left-0 m-2">
               <SecondaryButton
@@ -450,14 +458,20 @@ export default function GamePlay() {
             style={{ width: IMAGE_PANEL_W_PX, height: IMAGE_PANEL_H_PX }}
           >
             <div className="rounded-ui bg-transparent flex-1 flex items-center justify-center overflow-hidden relative">
-              {currentImage ? (
-                <img
-                  src={currentImage.src}
-                  alt="Driver scene to classify"
-                  className="w-full h-full object-cover rounded-ui"
-                />
-              ) : (
-                <span className="text-text-default text-secondary-text">
+              <AnimatePresence initial={false}>
+                {currentImage ? (
+                  <motion.img
+                    key={currentImageId}
+                    src={currentImage.src}
+                    alt="Driver scene to classify"
+                    className="absolute inset-0 w-full h-full object-cover rounded-ui"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                ) : (
+                  <span key="placeholder" className="text-text-default text-secondary-text relative">
                   {isPlaying && imageIds.length === 0
                     ? 'No images in this round'
                     : isRoundComplete
@@ -465,8 +479,9 @@ export default function GamePlay() {
                       : gameState.phase === 'complete'
                         ? ''
                         : 'Loading…'}
-                </span>
-              )}
+                  </span>
+                )}
+              </AnimatePresence>
               {/* Undo — top left of image (custom colors by pool) */}
               {isPlaying && imageIds.length > 0 && currentIndex > 0 && (
                 <div className="absolute top-0 left-0 m-3">
