@@ -22,9 +22,17 @@ const routes = [
 ]
 
 const PAGE_TRANSITION_DURATION = 1.1
+const GA_MEASUREMENT_ID = 'G-BKQF0WDKTY'
 
 function AnimatedRoutes() {
   const location = useLocation()
+
+  // Send page_view to Google Analytics on route change (SPA)
+  useEffect(() => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('config', GA_MEASUREMENT_ID, { page_path: location.pathname })
+    }
+  }, [location.pathname])
   const element = useRoutes(routes)
   return (
     <AnimatePresence mode="wait">
