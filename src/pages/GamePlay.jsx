@@ -453,7 +453,9 @@ export default function GamePlay() {
             {pool !== 'competitor' && (
               <img src="/icons/icon_acuLogo.svg" alt="" className="h-[64px] w-auto shrink-0" aria-hidden />
             )}
-            <span className="text-text-panel text-primary-text">Our Solution</span>
+            <span className="text-text-panel text-primary-text">
+              {pool === 'competitor' ? 'Alternative System' : 'Our Solution'}
+            </span>
           </div>
 
           {/* Bottom panel — image area (994×726) */}
