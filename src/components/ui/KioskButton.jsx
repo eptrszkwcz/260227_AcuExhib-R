@@ -21,8 +21,7 @@ export default function KioskButton({ children, onPress, disabled = false, class
       role="button"
       disabled={disabled}
       onPointerUp={handlePointerUp}
-      className={`min-w-[80px] min-h-[80px] flex items-center justify-center touch-manipulation select-none ${className}`}
-      style={{ touchAction: 'manipulation' }}
+      className={`min-w-[80px] min-h-[80px] flex items-center justify-center select-none ${className}`}
     >
       {children}
     </button>

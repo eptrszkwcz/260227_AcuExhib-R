@@ -158,7 +158,6 @@ function PlayerGameColumn({
                 if (e.button !== 0) return
                 onClassify(playerIndex, currentImageId, label)
               }}
-              style={{ touchAction: 'manipulation' }}
               className={`
                 w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                 bg-btn-sorting-bg opacity-100
@@ -542,7 +541,6 @@ export default function GamePlay() {
                       if (e.button !== 0) return
                       handleClassify(label)
                     }}
-                    style={{ touchAction: 'manipulation' }}
                     className={`
                       w-btn-sorting h-btn-sorting rounded-ui font-medium text-btn-sorting
                       bg-btn-sorting-bg opacity-100

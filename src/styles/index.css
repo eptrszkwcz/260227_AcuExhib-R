@@ -4,8 +4,10 @@
 
 /*
   Global kiosk resets.
-  These complement the viewport meta tag and usePreventZoom hook to ensure
-  no browser-level pinch-zoom, pan, overscroll, or text selection can occur.
+  - touch-action: none: no browser gestures (pinch, pan, double-tap, long-press
+    gestures); all touch is delivered as pointer events for game use.
+  - usePreventZoom blocks trackpad pinch; usePreventContextMenu blocks context
+    menu from right-click, long-press, and multi-touch-as-right-click.
 */
 html,
 body,
