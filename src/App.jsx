@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { GameProvider } from './context/GameContext'
 import { useIdleTimer } from './hooks/useIdleTimer'
 import { usePreventZoom } from './hooks/usePreventZoom'
+import { usePreventContextMenu } from './hooks/usePreventContextMenu'
 import FullscreenLayout from './components/layout/FullscreenLayout'
 import { PrimaryButton, PrimaryText } from './components/ui'
 import Welcome from './pages/Welcome'
@@ -73,6 +74,7 @@ function IdleTimerWrapper({ children }) {
   const [showStillTherePopup, setShowStillTherePopup] = useState(false)
 
   usePreventZoom()
+  usePreventContextMenu()
 
   const idleTimeoutMs =
     PAUSE_IDLE_TIMEOUT_FOR_DEV || location.pathname === '/'
