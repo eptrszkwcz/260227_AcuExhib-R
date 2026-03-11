@@ -28,9 +28,9 @@ const GA_MEASUREMENT_ID = 'G-BKQF0WDKTY'
 function AnimatedRoutes() {
   const location = useLocation()
 
-  // Send page_view to Google Analytics on route change (SPA)
+  // Send page_view to Google Analytics on route change (SPA); skip when offline
   useEffect(() => {
-    if (typeof window.gtag === 'function') {
+    if (navigator.onLine && typeof window.gtag === 'function') {
       window.gtag('config', GA_MEASUREMENT_ID, { page_path: location.pathname })
     }
   }, [location.pathname])

@@ -8,20 +8,21 @@
     />
     <title>Acusensus Game</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <!-- Anaheim font from Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Anaheim:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BKQF0WDKTY"></script>
+    <!-- Anaheim font: self-hosted in /fonts/ for offline kiosk -->
+    <!-- Google tag (gtag.js) - load and run only when online for kiosk -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-BKQF0WDKTY');
+      if (navigator.onLine) {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-BKQF0WDKTY';
+        document.head.appendChild(s);
+        s.onload = function() {
+          gtag('js', new Date());
+          gtag('config', 'G-BKQF0WDKTY');
+        };
+      }
     </script>
   </head>
   <body>
